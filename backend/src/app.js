@@ -17,7 +17,5 @@ app.use("/api/users", usersRouter);
 
 app.use(errorHandler);
 
-app.listen(1234, () => {
-  console.log("Server is running on http://localhost:1234");
-});
+export default app;
 
