@@ -13,7 +13,7 @@ app.use(express.json());
 app.use(morgan("dev"));
 app.use(cors({ credentials: true }));
 
-app.use("/api/users", usersRouter);
+app.use("/api/v1/users", usersRouter);
 
 app.use(errorHandler);
 

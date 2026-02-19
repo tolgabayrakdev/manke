@@ -5,9 +5,15 @@ vi.mock("../../src/database.js", () => ({
   default: {},
   withTransaction: vi.fn((fn) => fn({})),
 }));
+vi.mock("../../src/jobs/queues.js", () => ({
+  emailQueue: { add: vi.fn().mockResolvedValue({ id: "job-1" }) },
+  auditQueue: { add: vi.fn().mockResolvedValue({ id: "job-2" }) },
+  reportQueue: { add: vi.fn().mockResolvedValue({ id: "job-3" }) },
+}));
 
 import * as usersRepo from "../../src/repository/users.js";
 import { withTransaction } from "../../src/database.js";
+import { emailQueue, auditQueue, reportQueue } from "../../src/jobs/queues.js";
 import * as usersService from "../../src/service/users.js";
 import { NotFoundError, ValidationError } from "../../src/errors/appError.js";
 
@@ -67,6 +73,24 @@ describe("createUser", () => {
     expect(result).toEqual(mockUser);
   });
 
+  it("enqueues a welcome email job after creation", async () => {
+    usersRepo.insert.mockResolvedValue(mockUser);
+    await usersService.createUser({ name: "Alice", email: "alice@example.com" });
+    expect(emailQueue.add).toHaveBeenCalledWith("welcome", {
+      name: mockUser.name, email: mockUser.email, type: "welcome",
+    });
+  });
+
+  it("enqueues an audit log job after creation", async () => {
+    usersRepo.insert.mockResolvedValue(mockUser);
+    await usersService.createUser({ name: "Alice", email: "alice@example.com" });
+    expect(auditQueue.add).toHaveBeenCalledWith("log", expect.objectContaining({
+      action: "create",
+      userId: mockUser.id,
+      payload: { name: "Alice", email: "alice@example.com" },
+    }));
+  });
+
   it("throws ValidationError when name is missing", async () => {
     await expect(
       usersService.createUser({ email: "alice@example.com" })
@@ -110,6 +134,17 @@ describe("updateUser", () => {
     ).rejects.toThrow(NotFoundError);
   });
 
+  it("enqueues an audit log job after update", async () => {
+    const updated = { ...mockUser, name: "Bob" };
+    usersRepo.update.mockResolvedValue(updated);
+    await usersService.updateUser(1, { name: "Bob", email: "alice@example.com" });
+    expect(auditQueue.add).toHaveBeenCalledWith("log", expect.objectContaining({
+      action: "update",
+      userId: 1,
+      payload: { name: "Bob", email: "alice@example.com" },
+    }));
+  });
+
   it("throws ValidationError when name is missing", async () => {
     await expect(
       usersService.updateUser(1, { email: "alice@example.com" })
@@ -141,5 +176,18 @@ describe("deleteUser", () => {
     usersRepo.remove.mockResolvedValue(false);
 
     await expect(usersService.deleteUser(99)).rejects.toThrow(NotFoundError);
+  });
+
+  it("enqueues audit and report jobs after deletion", async () => {
+    usersRepo.remove.mockResolvedValue(true);
+    await usersService.deleteUser(1);
+    expect(auditQueue.add).toHaveBeenCalledWith("log", expect.objectContaining({
+      action: "delete",
+      userId: 1,
+      payload: null,
+    }));
+    expect(reportQueue.add).toHaveBeenCalledWith("deletion-report", expect.objectContaining({
+      userId: 1,
+    }));
   });
 });

@@ -13,26 +13,26 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-// ─── GET /api/users ─────────────────────────────────────────────────────────
+// ─── GET /api/v1/users ──────────────────────────────────────────────────────
 
-describe("GET /api/users", () => {
+describe("GET /api/v1/users", () => {
   it("returns 200 with list of users", async () => {
     usersService.getAllUsers.mockResolvedValue([mockUser]);
 
-    const res = await request(app).get("/api/users");
+    const res = await request(app).get("/api/v1/users");
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual([mockUser]);
   });
 });
 
-// ─── GET /api/users/:id ─────────────────────────────────────────────────────
+// ─── GET /api/v1/users/:id ──────────────────────────────────────────────────
 
-describe("GET /api/users/:id", () => {
+describe("GET /api/v1/users/:id", () => {
   it("returns 200 with user when found", async () => {
     usersService.getUserById.mockResolvedValue(mockUser);
 
-    const res = await request(app).get("/api/users/1");
+    const res = await request(app).get("/api/v1/users/1");
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(mockUser);
@@ -41,21 +41,21 @@ describe("GET /api/users/:id", () => {
   it("returns 404 when user not found", async () => {
     usersService.getUserById.mockRejectedValue(new NotFoundError("User not found"));
 
-    const res = await request(app).get("/api/users/99");
+    const res = await request(app).get("/api/v1/users/99");
 
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ error: "User not found" });
   });
 });
 
-// ─── POST /api/users ─────────────────────────────────────────────────────────
+// ─── POST /api/v1/users ──────────────────────────────────────────────────────
 
-describe("POST /api/users", () => {
+describe("POST /api/v1/users", () => {
   it("returns 201 with created user", async () => {
     usersService.createUser.mockResolvedValue(mockUser);
 
     const res = await request(app)
-      .post("/api/users")
+      .post("/api/v1/users")
       .send({ name: "Alice", email: "alice@example.com" });
 
     expect(res.status).toBe(201);
@@ -67,22 +67,22 @@ describe("POST /api/users", () => {
       new ValidationError("name and email are required")
     );
 
-    const res = await request(app).post("/api/users").send({ name: "Alice" });
+    const res = await request(app).post("/api/v1/users").send({ name: "Alice" });
 
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ error: "name and email are required" });
   });
 });
 
-// ─── PUT /api/users/:id ──────────────────────────────────────────────────────
+// ─── PUT /api/v1/users/:id ───────────────────────────────────────────────────
 
-describe("PUT /api/users/:id", () => {
+describe("PUT /api/v1/users/:id", () => {
   it("returns 200 with updated user", async () => {
     const updated = { ...mockUser, name: "Bob" };
     usersService.updateUser.mockResolvedValue(updated);
 
     const res = await request(app)
-      .put("/api/users/1")
+      .put("/api/v1/users/1")
       .send({ name: "Bob", email: "alice@example.com" });
 
     expect(res.status).toBe(200);
@@ -93,7 +93,7 @@ describe("PUT /api/users/:id", () => {
     usersService.updateUser.mockRejectedValue(new NotFoundError("User not found"));
 
     const res = await request(app)
-      .put("/api/users/99")
+      .put("/api/v1/users/99")
       .send({ name: "Bob", email: "bob@example.com" });
 
     expect(res.status).toBe(404);
@@ -105,20 +105,20 @@ describe("PUT /api/users/:id", () => {
       new ValidationError("name and email are required")
     );
 
-    const res = await request(app).put("/api/users/1").send({ name: "Bob" });
+    const res = await request(app).put("/api/v1/users/1").send({ name: "Bob" });
 
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ error: "name and email are required" });
   });
 });
 
-// ─── DELETE /api/users/:id ───────────────────────────────────────────────────
+// ─── DELETE /api/v1/users/:id ────────────────────────────────────────────────
 
-describe("DELETE /api/users/:id", () => {
+describe("DELETE /api/v1/users/:id", () => {
   it("returns 204 on successful delete", async () => {
     usersService.deleteUser.mockResolvedValue(undefined);
 
-    const res = await request(app).delete("/api/users/1");
+    const res = await request(app).delete("/api/v1/users/1");
 
     expect(res.status).toBe(204);
   });
@@ -126,7 +126,7 @@ describe("DELETE /api/users/:id", () => {
   it("returns 404 when user not found", async () => {
     usersService.deleteUser.mockRejectedValue(new NotFoundError("User not found"));
 
-    const res = await request(app).delete("/api/users/99");
+    const res = await request(app).delete("/api/v1/users/99");
 
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ error: "User not found" });
